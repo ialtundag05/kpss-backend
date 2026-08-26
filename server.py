@@ -1,6 +1,6 @@
 """KPSS Quest FastAPI Backend - offline-first exam prep app."""
 from fastapi import FastAPI, APIRouter, Header, HTTPException, Body
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, RedirectResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -8,6 +8,7 @@ import os
 import logging
 import uuid
 import httpx
+import urllib.parse
 from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -125,6 +126,11 @@ async def get_user_from_token(authorization: Optional[str]) -> dict:
 
 
 # ---------------- Auth ----------------
+@api_router.get("/auth/login")
+async def auth_login(redirect: str):
+    target_url = f"https://demobackend.emergentagent.com/auth/v1/env/oauth/login?redirect={urllib.parse.quote(redirect)}"
+    return RedirectResponse(url=target_url)
+
 @api_router.post("/auth/session")
 async def create_session(payload: SessionRequest):
     session_id = payload.session_id
