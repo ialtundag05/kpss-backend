@@ -28,11 +28,9 @@ EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 app = FastAPI(title="KPSS Quest API")
 api_router = APIRouter(prefix="/api")
 
-
 # ---------------- Models ----------------
 class SessionRequest(BaseModel):
     session_id: str
-
 
 class User(BaseModel):
     user_id: str
@@ -45,7 +43,6 @@ class User(BaseModel):
     current_lives: int = 3
     language: str = "tr"
     created_at: str
-
 
 class Question(BaseModel):
     id: str
@@ -60,20 +57,17 @@ class Question(BaseModel):
     difficulty: int
     is_frequently_asked: bool
 
-
 class Flashcard(BaseModel):
     id: str
     subject: str
     front_text: str
     back_text: str
 
-
 class Video(BaseModel):
     id: str
     title: str
     video_url: str
     subject: str
-
 
 class ProgressUpdate(BaseModel):
     subject: str
@@ -82,14 +76,11 @@ class ProgressUpdate(BaseModel):
     wrong: int = 0
     xp_gained: int = 0
 
-
 class OnboardingUpdate(BaseModel):
     exam_target_date: str
 
-
 class LanguageUpdate(BaseModel):
     language: str
-
 
 class SyncPayload(BaseModel):
     progress_updates: List[ProgressUpdate] = []
@@ -97,13 +88,11 @@ class SyncPayload(BaseModel):
     streak_count: Optional[int] = None
     lives: Optional[int] = None
 
-
 class ExplainRequest(BaseModel):
     question: str
     correct_answer: str
     user_answer: str
     language: str = "tr"
-
 
 # ---------------- Helpers ----------------
 async def get_user_from_token(authorization: Optional[str]) -> dict:
@@ -124,45 +113,69 @@ async def get_user_from_token(authorization: Optional[str]) -> dict:
         raise HTTPException(status_code=401, detail="user_not_found")
     return user
 
-
-# ---------------- Auth ----------------
+# ---------------- DOĞRUDAN GOOGLE AUTH KODLARI ----------------
 @api_router.get("/auth/login")
 async def auth_login(redirect: str):
-    target_url = f"https://demobackend.emergentagent.com/auth/v1/env/oauth/login?redirect={urllib.parse.quote(redirect)}"
-    return RedirectResponse(url=target_url)
+    client_id = os.environ.get("GOOGLE_CLIENT_ID")
+    redirect_uri = f"{os.environ.get('EXPO_PUBLIC_BACKEND_URL')}/api/auth/callback"
+    state = urllib.parse.quote(redirect)
+    
+    url = (
+        f"https://accounts.google.com/o/oauth2/v2/auth?"
+        f"response_type=code&client_id={client_id}&"
+        f"redirect_uri={redirect_uri}&"
+        f"scope=openid%20email%20profile&state={state}"
+    )
+    return RedirectResponse(url=url)
 
-@api_router.post("/auth/session")
-async def create_session(payload: SessionRequest):
-    session_id = payload.session_id
-    if not session_id:
-        raise HTTPException(status_code=400, detail="session_id_required")
-    async with httpx.AsyncClient(timeout=10.0) as hc:
-        r = await hc.get(
-            "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
-            headers={"X-Session-ID": session_id},
+@api_router.get("/auth/callback")
+async def auth_callback(code: str, state: str):
+    client_id = os.environ.get("GOOGLE_CLIENT_ID")
+    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
+    redirect_uri = f"{os.environ.get('EXPO_PUBLIC_BACKEND_URL')}/api/auth/callback"
+    
+    async with httpx.AsyncClient() as hc:
+        token_res = await hc.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": redirect_uri
+            }
         )
-    if r.status_code != 200:
-        raise HTTPException(status_code=401, detail="invalid_session_id")
-    data = r.json()
-    email = data.get("email")
-    name = data.get("name") or email
-    picture = data.get("picture")
-    session_token = data.get("session_token")
-    if not email or not session_token:
-        raise HTTPException(status_code=401, detail="bad_session_data")
-
+        token_data = token_res.json()
+        access_token = token_data.get("access_token")
+        if not access_token:
+            raise HTTPException(status_code=400, detail="google_token_error")
+        
+        user_res = await hc.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        user_info = user_res.json()
+        
+    email = user_info.get("email")
+    name = user_info.get("name") or email
+    picture = user_info.get("picture")
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="no_email_found")
+        
+    session_token = f"sess_{uuid.uuid4().hex}"
     existing = await db.users.find_one({"email": email}, {"_id": 0})
     now = datetime.now(timezone.utc)
+    
     if existing:
         user_id = existing["user_id"]
         await db.users.update_one(
             {"user_id": user_id},
             {"$set": {"name": name, "picture": picture}},
         )
-        user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
     else:
         user_id = f"user_{uuid.uuid4().hex[:12]}"
-        user = {
+        user_doc = {
             "user_id": user_id,
             "email": email,
             "name": name,
@@ -174,8 +187,7 @@ async def create_session(payload: SessionRequest):
             "language": "tr",
             "created_at": now.isoformat(),
         }
-        await db.users.insert_one(user.copy())
-        user.pop("_id", None)
+        await db.users.insert_one(user_doc)
 
     await db.user_sessions.insert_one({
         "session_token": session_token,
@@ -183,14 +195,25 @@ async def create_session(payload: SessionRequest):
         "created_at": now,
         "expires_at": now + timedelta(days=7),
     })
-    return {"session_token": session_token, "user": user}
+    
+    app_redirect = urllib.parse.unquote(state)
+    sep = "&" if "?" in app_redirect else "?"
+    final_url = f"{app_redirect}{sep}session_id={session_token}"
+    return RedirectResponse(url=final_url)
 
+@api_router.post("/auth/session")
+async def verify_session(payload: SessionRequest):
+    session_token = payload.session_id
+    session = await db.user_sessions.find_one({"session_token": session_token}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=401, detail="invalid_session")
+    user = await db.users.find_one({"user_id": session["user_id"]}, {"_id": 0})
+    return {"session_token": session_token, "user": user}
 
 @api_router.get("/auth/me")
 async def me(authorization: Optional[str] = Header(default=None)):
     user = await get_user_from_token(authorization)
     return {"user": user}
-
 
 @api_router.post("/auth/logout")
 async def logout(authorization: Optional[str] = Header(default=None)):
@@ -198,7 +221,6 @@ async def logout(authorization: Optional[str] = Header(default=None)):
         token = authorization.split(" ", 1)[1].strip()
         await db.user_sessions.delete_one({"session_token": token})
     return {"ok": True}
-
 
 # ---------------- Profile ----------------
 @api_router.post("/profile/onboarding")
@@ -211,14 +233,12 @@ async def set_onboarding(payload: OnboardingUpdate, authorization: Optional[str]
     user["exam_target_date"] = payload.exam_target_date
     return {"user": user}
 
-
 @api_router.post("/profile/language")
 async def set_language(payload: LanguageUpdate, authorization: Optional[str] = Header(default=None)):
     user = await get_user_from_token(authorization)
     lang = payload.language if payload.language in ("tr", "en") else "tr"
     await db.users.update_one({"user_id": user["user_id"]}, {"$set": {"language": lang}})
     return {"language": lang}
-
 
 # ---------------- Content ----------------
 @api_router.get("/questions")
@@ -229,7 +249,6 @@ async def get_questions(subject: Optional[str] = None):
     items = await db.questions.find(q, {"_id": 0}).to_list(1000)
     return {"items": items}
 
-
 @api_router.get("/flashcards")
 async def get_flashcards(subject: Optional[str] = None):
     q = {}
@@ -238,7 +257,6 @@ async def get_flashcards(subject: Optional[str] = None):
     items = await db.flashcards.find(q, {"_id": 0}).to_list(1000)
     return {"items": items}
 
-
 @api_router.get("/videos")
 async def get_videos(subject: Optional[str] = None):
     q = {}
@@ -246,7 +264,6 @@ async def get_videos(subject: Optional[str] = None):
         q["subject"] = subject
     items = await db.videos.find(q, {"_id": 0}).to_list(1000)
     return {"items": items}
-
 
 # ---------------- Progress & Sync ----------------
 @api_router.post("/sync")
@@ -278,13 +295,11 @@ async def sync(payload: SyncPayload, authorization: Optional[str] = Header(defau
     progress = await db.user_progress.find({"user_id": uid}, {"_id": 0}).to_list(1000)
     return {"user": updated_user, "progress": progress}
 
-
 @api_router.get("/progress")
 async def get_progress(authorization: Optional[str] = Header(default=None)):
     user = await get_user_from_token(authorization)
     progress = await db.user_progress.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(1000)
     return {"progress": progress}
-
 
 # ---------------- Leaderboard ----------------
 @api_router.get("/leaderboard")
@@ -293,7 +308,6 @@ async def leaderboard(authorization: Optional[str] = Header(default=None)):
     top = await db.users.find({}, {"_id": 0, "user_id": 1, "name": 1, "picture": 1, "xp_points": 1, "streak_count": 1})\
         .sort("xp_points", -1).limit(50).to_list(50)
     return {"leaderboard": top, "current_user_id": user["user_id"]}
-
 
 # ---------------- AI Explain ----------------
 @api_router.post("/ai/explain")
@@ -339,12 +353,10 @@ async def explain(payload: ExplainRequest, authorization: Optional[str] = Header
         logging.exception("ai explain failed")
         raise HTTPException(status_code=502, detail=f"ai_error: {e}")
 
-
 # ---------------- Health ----------------
 @api_router.get("/")
 async def root():
     return {"message": "KPSS Quest API", "ok": True}
-
 
 # ---------------- Seed ----------------
 async def seed_content():
@@ -361,7 +373,6 @@ async def seed_content():
         await db.videos.insert_many(docs)
         logging.info("Seeded %d videos", len(docs))
 
-
 @app.on_event("startup")
 async def startup_event():
     await db.users.create_index("email", unique=True)
@@ -371,7 +382,6 @@ async def startup_event():
     await db.user_sessions.create_index("expires_at", expireAfterSeconds=0)
     await db.user_progress.create_index([("user_id", 1), ("subject", 1), ("topic", 1)])
     await seed_content()
-
 
 app.include_router(api_router)
 
@@ -385,7 +395,6 @@ app.add_middleware(
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
