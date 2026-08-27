@@ -300,34 +300,31 @@ async def get_progress(authorization: Optional[str] = Header(default=None)):
     progress = await db.user_progress.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(1000)
     return {"progress": progress}
 
-# ---------------- Leaderboard (GİZLİLİK GÜNCELLEMESİ) ----------------
+# ---------------- Leaderboard (GİZLİLİK GÜNCELLEMESİ EKLİ) ----------------
 @api_router.get("/leaderboard")
 async def leaderboard(authorization: Optional[str] = Header(default=None)):
     user = await get_user_from_token(authorization)
     top = await db.users.find({}, {"_id": 0, "user_id": 1, "name": 1, "picture": 1, "xp_points": 1, "streak_count": 1})\
         .sort("xp_points", -1).limit(50).to_list(50)
         
-    # Başka kullanıcıların isimlerini sansürlüyoruz (Ahmet -> A***)
+    # Başka kullanıcıların isimlerini sansürlüyoruz (Örn: İbrahim -> İ***)
     for u in top:
-        if u["user_id"] != user["user_id"]:  # Eğer listelenen kişi "ben" değilsem
+        if u["user_id"] != user["user_id"]:
             isim = u.get("name", "")
             if isim:
-                u["name"] = f"{isim[0]}***"  # Sadece ilk harfi al ve yanına *** koy
+                u["name"] = f"{isim[0]}***"
                 
     return {"leaderboard": top, "current_user_id": user["user_id"]}
 
-# ---------------- AI Explain (STABİL GEMINI-PRO BAĞLANTISI) ----------------
+# ---------------- AI Explain (SARSILMAZ GEMINI BAĞLANTISI) ----------------
 @api_router.post("/ai/explain")
 async def explain(payload: ExplainRequest, authorization: Optional[str] = Header(default=None)):
     await get_user_from_token(authorization)
     
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        return {"explanation": "Sunucuda Yapay Zeka Şifresi (GEMINI_API_KEY) eksik! Lütfen Render'a şifreyi ekleyin."}
+        return {"explanation": "Sunucuda Yapay Zeka Şifresi (GEMINI_API_KEY) eksik!"}
         
-    # En stabil model olan gemini-pro'ya geçiş yapıldı
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
-    
     prompt = (
         f"Sen bir KPSS öğretmenisin. Soru: '{payload.question}'. "
         f"Doğru cevap: '{payload.correct_answer}'. "
@@ -339,17 +336,25 @@ async def explain(payload: ExplainRequest, authorization: Optional[str] = Header
         "contents": [{"parts": [{"text": prompt}]}]
     }
     
+    # 3 farklı modeli sırayla dener (Biri çalışmazsa saliseler içinde diğerine geçer)
+    models_to_try = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.0-pro"]
+    
     async with httpx.AsyncClient() as hc:
-        try:
-            resp = await hc.post(url, json=payload_data, timeout=15.0)
-            if resp.status_code == 200:
-                data = resp.json()
-                text = data["candidates"][0]["content"]["parts"][0]["text"]
-                return {"explanation": text}
-            else:
-                return {"explanation": f"Yapay Zeka bir sorunla karşılaştı: {resp.text}"}
-        except Exception as e:
-            return {"explanation": f"Bağlantı hatası: {str(e)}"}
+        last_error = ""
+        for model in models_to_try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            try:
+                resp = await hc.post(url, json=payload_data, timeout=15.0)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    text = data["candidates"][0]["content"]["parts"][0]["text"]
+                    return {"explanation": text}
+                else:
+                    last_error = resp.text
+            except Exception as e:
+                last_error = str(e)
+                
+        return {"explanation": f"Yapay Zeka modellerine ulaşılamadı. Lütfen tekrar deneyin."}
 
 # ---------------- Health ----------------
 @api_router.get("/")
