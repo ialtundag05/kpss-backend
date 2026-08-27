@@ -360,20 +360,28 @@ async def explain(payload: ExplainRequest, authorization: Optional[str] = Header
 async def root():
     return {"message": "KPSS Quest API", "ok": True}
 
-# ---------------- Seed ----------------
+# ---------------- Seed (GÜNCELLENDİ: ESKİLERİ SİLİP YENİLERİ EKLER) ----------------
 async def seed_content():
-    if await db.questions.count_documents({}) == 0:
-        docs = [{**q, "id": str(uuid.uuid4())} for q in QUESTIONS]
-        await db.questions.insert_many(docs)
-        logging.info("Seeded %d questions", len(docs))
-    if await db.flashcards.count_documents({}) == 0:
-        docs = [{**f, "id": str(uuid.uuid4())} for f in FLASHCARDS]
-        await db.flashcards.insert_many(docs)
-        logging.info("Seeded %d flashcards", len(docs))
-    if await db.videos.count_documents({}) == 0:
-        docs = [{**v, "id": str(uuid.uuid4())} for v in VIDEOS]
-        await db.videos.insert_many(docs)
-        logging.info("Seeded %d videos", len(docs))
+    # 1. Eski veritabanını tamamen temizliyoruz (Yeni verilerle çakışmasın diye)
+    await db.questions.delete_many({})
+    await db.flashcards.delete_many({})
+    await db.videos.delete_many({})
+    
+    # 2. Yeni ve güncel verileri tertemiz bir şekilde ekliyoruz
+    docs_q = [{**q, "id": str(uuid.uuid4())} for q in QUESTIONS]
+    if docs_q:
+        await db.questions.insert_many(docs_q)
+        logging.info("YENI: %d soru eklendi", len(docs_q))
+    
+    docs_f = [{**f, "id": str(uuid.uuid4())} for f in FLASHCARDS]
+    if docs_f:
+        await db.flashcards.insert_many(docs_f)
+        logging.info("YENI: %d flashcard eklendi", len(docs_f))
+    
+    docs_v = [{**v, "id": str(uuid.uuid4())} for v in VIDEOS]
+    if docs_v:
+        await db.videos.insert_many(docs_v)
+        logging.info("YENI: %d video eklendi", len(docs_v))
 
 @app.on_event("startup")
 async def startup_event():
