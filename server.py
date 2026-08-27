@@ -23,7 +23,6 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Artık kendi API anahtarımızı (GEMINI_API_KEY) kullanacağız
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 
 app = FastAPI(title="KPSS Quest API")
@@ -311,19 +310,18 @@ async def leaderboard(authorization: Optional[str] = Header(default=None)):
         .sort("xp_points", -1).limit(50).to_list(50)
     return {"leaderboard": top, "current_user_id": user["user_id"]}
 
-# ---------------- AI Explain (GERÇEK GEMINI BAĞLANTISI) ----------------
+# ---------------- AI Explain (GEMINI LATEST BAĞLANTISI) ----------------
 @api_router.post("/ai/explain")
 async def explain(payload: ExplainRequest, authorization: Optional[str] = Header(default=None)):
     await get_user_from_token(authorization)
     
-    # 1. Render'dan Yapay Zeka Şifremizi alıyoruz
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         return {"explanation": "Sunucuda Yapay Zeka Şifresi (GEMINI_API_KEY) eksik! Lütfen Render'a şifreyi ekleyin."}
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    # İŞTE BURASI DEĞİŞTİ: gemini-1.5-flash yerine gemini-1.5-flash-latest yazdık
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
     
-    # 2. Yapay zekaya (bana) verilecek komut
     prompt = (
         f"Sen bir KPSS öğretmenisin. Soru: '{payload.question}'. "
         f"Doğru cevap: '{payload.correct_answer}'. "
@@ -335,7 +333,6 @@ async def explain(payload: ExplainRequest, authorization: Optional[str] = Header
         "contents": [{"parts": [{"text": prompt}]}]
     }
     
-    # 3. Google Gemini'a bağlan ve cevabı al
     async with httpx.AsyncClient() as hc:
         try:
             resp = await hc.post(url, json=payload_data, timeout=15.0)
@@ -355,12 +352,10 @@ async def root():
 
 # ---------------- Seed (GÜNCELLENDİ: ESKİLERİ SİLİP YENİLERİ EKLER) ----------------
 async def seed_content():
-    # 1. Eski veritabanını tamamen temizliyoruz (Yeni verilerle çakışmasın diye)
     await db.questions.delete_many({})
     await db.flashcards.delete_many({})
     await db.videos.delete_many({})
     
-    # 2. Yeni ve güncel verileri tertemiz bir şekilde ekliyoruz
     docs_q = [{**q, "id": str(uuid.uuid4())} for q in QUESTIONS]
     if docs_q:
         await db.questions.insert_many(docs_q)
