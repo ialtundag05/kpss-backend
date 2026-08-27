@@ -147,8 +147,10 @@ async def auth_callback(code: str, state: str):
         )
         token_data = token_res.json()
         access_token = token_data.get("access_token")
+        
+        # İŞTE BURAYI DEĞİŞTİRDİK - ARTIK BİZE GERÇEK HATAYI SÖYLEYECEK!
         if not access_token:
-            raise HTTPException(status_code=400, detail="google_token_error")
+            raise HTTPException(status_code=400, detail=token_data)
         
         user_res = await hc.get(
             "https://www.googleapis.com/oauth2/v2/userinfo",
