@@ -300,14 +300,13 @@ async def get_progress(authorization: Optional[str] = Header(default=None)):
     progress = await db.user_progress.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(1000)
     return {"progress": progress}
 
-# ---------------- Leaderboard (GİZLİLİK GÜNCELLEMESİ EKLİ) ----------------
+# ---------------- Leaderboard ----------------
 @api_router.get("/leaderboard")
 async def leaderboard(authorization: Optional[str] = Header(default=None)):
     user = await get_user_from_token(authorization)
     top = await db.users.find({}, {"_id": 0, "user_id": 1, "name": 1, "picture": 1, "xp_points": 1, "streak_count": 1})\
         .sort("xp_points", -1).limit(50).to_list(50)
         
-    # Başka kullanıcıların isimlerini sansürlüyoruz (Örn: İbrahim -> İ***)
     for u in top:
         if u["user_id"] != user["user_id"]:
             isim = u.get("name", "")
@@ -316,7 +315,7 @@ async def leaderboard(authorization: Optional[str] = Header(default=None)):
                 
     return {"leaderboard": top, "current_user_id": user["user_id"]}
 
-# ---------------- AI Explain (SARSILMAZ GEMINI BAĞLANTISI) ----------------
+# ---------------- AI Explain (OTOMATİK MODEL BULUCU) ----------------
 @api_router.post("/ai/explain")
 async def explain(payload: ExplainRequest, authorization: Optional[str] = Header(default=None)):
     await get_user_from_token(authorization)
@@ -336,25 +335,39 @@ async def explain(payload: ExplainRequest, authorization: Optional[str] = Header
         "contents": [{"parts": [{"text": prompt}]}]
     }
     
-    # 3 farklı modeli sırayla dener (Biri çalışmazsa saliseler içinde diğerine geçer)
-    models_to_try = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.0-pro"]
-    
     async with httpx.AsyncClient() as hc:
-        last_error = ""
-        for model in models_to_try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-            try:
-                resp = await hc.post(url, json=payload_data, timeout=15.0)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    text = data["candidates"][0]["content"]["parts"][0]["text"]
-                    return {"explanation": text}
-                else:
-                    last_error = resp.text
-            except Exception as e:
-                last_error = str(e)
-                
-        return {"explanation": f"Yapay Zeka modellerine ulaşılamadı. Lütfen tekrar deneyin."}
+        target_model = "models/gemini-1.5-flash" # Varsayılan (Eğer bulamazsa bunu dener)
+        
+        # 1. Google'a sor: "Şu an elinde hangi modeller var?"
+        try:
+            models_resp = await hc.get(f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}", timeout=10.0)
+            if models_resp.status_code == 200:
+                models_list = models_resp.json().get("models", [])
+                # Sadece soru çözebilen modelleri seç
+                valid_models = [m["name"] for m in models_list if "generateContent" in m.get("supportedGenerationMethods", [])]
+                if valid_models:
+                    # İçinde "flash" geçen en yeni modeli bulmaya çalış
+                    flash_models = [m for m in valid_models if "flash" in m.lower()]
+                    if flash_models:
+                        target_model = flash_models[-1] # En güncel flash modeli
+                    else:
+                        target_model = valid_models[-1] # Flash yoksa herhangi birini seç
+        except Exception:
+            pass # Eğer model listesini alamazsa varsayılan ile devam et
+
+        # 2. Bulduğumuz en güncel modele soruyu gönder
+        url = f"https://generativelanguage.googleapis.com/v1beta/{target_model}:generateContent?key={api_key}"
+        try:
+            resp = await hc.post(url, json=payload_data, timeout=15.0)
+            if resp.status_code == 200:
+                data = resp.json()
+                text = data["candidates"][0]["content"]["parts"][0]["text"]
+                return {"explanation": text}
+            else:
+                # EĞER HATA OLURSA, ARTIK EKRANDA TAM OLARAK NEDEN HATA OLDUĞUNU GÖRECEĞİZ!
+                return {"explanation": f"Google API Hatası ({resp.status_code}): \n{resp.text}\n\nDenenen Model: {target_model}"}
+        except Exception as e:
+            return {"explanation": f"Sunucu bağlantı hatası: {str(e)}"}
 
 # ---------------- Health ----------------
 @api_router.get("/")
