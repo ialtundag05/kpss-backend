@@ -23,8 +23,6 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
-
 app = FastAPI(title="KPSS Quest API")
 api_router = APIRouter(prefix="/api")
 
@@ -302,15 +300,23 @@ async def get_progress(authorization: Optional[str] = Header(default=None)):
     progress = await db.user_progress.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(1000)
     return {"progress": progress}
 
-# ---------------- Leaderboard ----------------
+# ---------------- Leaderboard (GİZLİLİK GÜNCELLEMESİ) ----------------
 @api_router.get("/leaderboard")
 async def leaderboard(authorization: Optional[str] = Header(default=None)):
     user = await get_user_from_token(authorization)
     top = await db.users.find({}, {"_id": 0, "user_id": 1, "name": 1, "picture": 1, "xp_points": 1, "streak_count": 1})\
         .sort("xp_points", -1).limit(50).to_list(50)
+        
+    # Başka kullanıcıların isimlerini sansürlüyoruz (Ahmet -> A***)
+    for u in top:
+        if u["user_id"] != user["user_id"]:  # Eğer listelenen kişi "ben" değilsem
+            isim = u.get("name", "")
+            if isim:
+                u["name"] = f"{isim[0]}***"  # Sadece ilk harfi al ve yanına *** koy
+                
     return {"leaderboard": top, "current_user_id": user["user_id"]}
 
-# ---------------- AI Explain (GEMINI LATEST BAĞLANTISI) ----------------
+# ---------------- AI Explain (STABİL GEMINI-PRO BAĞLANTISI) ----------------
 @api_router.post("/ai/explain")
 async def explain(payload: ExplainRequest, authorization: Optional[str] = Header(default=None)):
     await get_user_from_token(authorization)
@@ -319,8 +325,8 @@ async def explain(payload: ExplainRequest, authorization: Optional[str] = Header
     if not api_key:
         return {"explanation": "Sunucuda Yapay Zeka Şifresi (GEMINI_API_KEY) eksik! Lütfen Render'a şifreyi ekleyin."}
         
-    # İŞTE BURASI DEĞİŞTİ: gemini-1.5-flash yerine gemini-1.5-flash-latest yazdık
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
+    # En stabil model olan gemini-pro'ya geçiş yapıldı
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
     
     prompt = (
         f"Sen bir KPSS öğretmenisin. Soru: '{payload.question}'. "
@@ -350,7 +356,7 @@ async def explain(payload: ExplainRequest, authorization: Optional[str] = Header
 async def root():
     return {"message": "KPSS Quest API", "ok": True}
 
-# ---------------- Seed (GÜNCELLENDİ: ESKİLERİ SİLİP YENİLERİ EKLER) ----------------
+# ---------------- Seed ----------------
 async def seed_content():
     await db.questions.delete_many({})
     await db.flashcards.delete_many({})
