@@ -5,27 +5,12 @@ QUESTIONS = [
     {"subject": "Tarih", "topic": "Osmanlı Kuruluş", "question_text": "Osmanlı Devleti hangi yıl kurulmuştur?",
      "option_a": "1299", "option_b": "1326", "option_c": "1389", "option_d": "1453",
      "correct_option": "a", "difficulty": 1, "is_frequently_asked": True},
-    {"subject": "Tarih", "topic": "Osmanlı Kuruluş", "question_text": "Osmanlı Devleti'nin kurucusu kimdir?",
-     "option_a": "Orhan Bey", "option_b": "Osman Bey", "option_c": "Ertuğrul Gazi", "option_d": "Alaaddin Bey",
-     "correct_option": "b", "difficulty": 1, "is_frequently_asked": True},
     {"subject": "Tarih", "topic": "Fetih Dönemi", "question_text": "İstanbul hangi yıl fethedilmiştir?",
      "option_a": "1451", "option_b": "1453", "option_c": "1458", "option_d": "1461",
      "correct_option": "b", "difficulty": 1, "is_frequently_asked": True},
     {"subject": "Tarih", "topic": "Kurtuluş Savaşı", "question_text": "TBMM hangi tarihte açılmıştır?",
      "option_a": "19 Mayıs 1919", "option_b": "23 Nisan 1920", "option_c": "29 Ekim 1923", "option_d": "24 Temmuz 1923",
      "correct_option": "b", "difficulty": 2, "is_frequently_asked": True},
-    {"subject": "Tarih", "topic": "Cumhuriyet", "question_text": "Cumhuriyet hangi yıl ilan edilmiştir?",
-     "option_a": "1920", "option_b": "1922", "option_c": "1923", "option_d": "1924",
-     "correct_option": "c", "difficulty": 1, "is_frequently_asked": True},
-    {"subject": "Tarih", "topic": "İnkılaplar", "question_text": "Harf İnkılabı hangi yıl gerçekleşmiştir?",
-     "option_a": "1925", "option_b": "1926", "option_c": "1928", "option_d": "1934",
-     "correct_option": "c", "difficulty": 2, "is_frequently_asked": False},
-    {"subject": "Tarih", "topic": "İnkılaplar", "question_text": "Kadınlara milletvekili seçilme hakkı hangi yıl verilmiştir?",
-     "option_a": "1930", "option_b": "1934", "option_c": "1937", "option_d": "1940",
-     "correct_option": "b", "difficulty": 2, "is_frequently_asked": True},
-    {"subject": "Tarih", "topic": "Osmanlı Yükseliş", "question_text": "Kanuni Sultan Süleyman kaç yıl padişahlık yapmıştır?",
-     "option_a": "36", "option_b": "40", "option_c": "46", "option_d": "50",
-     "correct_option": "c", "difficulty": 3, "is_frequently_asked": False},
 
     # COĞRAFYA
     {"subject": "Coğrafya", "topic": "Türkiye Fiziki", "question_text": "Türkiye'nin en yüksek dağı hangisidir?",
@@ -34,21 +19,6 @@ QUESTIONS = [
     {"subject": "Coğrafya", "topic": "Türkiye Fiziki", "question_text": "Türkiye'nin en uzun nehri hangisidir?",
      "option_a": "Fırat", "option_b": "Kızılırmak", "option_c": "Sakarya", "option_d": "Dicle",
      "correct_option": "b", "difficulty": 1, "is_frequently_asked": True},
-    {"subject": "Coğrafya", "topic": "İklim", "question_text": "Karadeniz ikliminin en belirgin özelliği nedir?",
-     "option_a": "Kurak yazlar", "option_b": "Her mevsim yağışlı", "option_c": "Karasal iklim", "option_d": "Sıcak kışlar",
-     "correct_option": "b", "difficulty": 1, "is_frequently_asked": True},
-    {"subject": "Coğrafya", "topic": "Bölgeler", "question_text": "Türkiye'nin en kalabalık bölgesi hangisidir?",
-     "option_a": "İç Anadolu", "option_b": "Marmara", "option_c": "Ege", "option_d": "Akdeniz",
-     "correct_option": "b", "difficulty": 1, "is_frequently_asked": True},
-    {"subject": "Coğrafya", "topic": "Nüfus", "question_text": "Türkiye'nin nüfus yoğunluğu en az olan bölge hangisidir?",
-     "option_a": "Doğu Anadolu", "option_b": "İç Anadolu", "option_c": "Güneydoğu Anadolu", "option_d": "Karadeniz",
-     "correct_option": "a", "difficulty": 2, "is_frequently_asked": False},
-    {"subject": "Coğrafya", "topic": "Türkiye Fiziki", "question_text": "Türkiye'nin en büyük gölü hangisidir?",
-     "option_a": "Tuz Gölü", "option_b": "Van Gölü", "option_c": "Beyşehir", "option_d": "Eğirdir",
-     "correct_option": "b", "difficulty": 1, "is_frequently_asked": True},
-    {"subject": "Coğrafya", "topic": "Ekonomik", "question_text": "Türkiye'de fındık üretiminin en fazla yapıldığı bölge hangisidir?",
-     "option_a": "Ege", "option_b": "Marmara", "option_c": "Karadeniz", "option_d": "Akdeniz",
-     "correct_option": "c", "difficulty": 1, "is_frequently_asked": True},
 
     # VATANDAŞLIK
     {"subject": "Vatandaşlık", "topic": "Anayasa", "question_text": "Türkiye Cumhuriyeti Anayasası hangi yıl kabul edilmiştir? (Mevcut)",
@@ -57,18 +27,6 @@ QUESTIONS = [
     {"subject": "Vatandaşlık", "topic": "Devlet Yapısı", "question_text": "TBMM üye sayısı kaçtır?",
      "option_a": "450", "option_b": "500", "option_c": "550", "option_d": "600",
      "correct_option": "d", "difficulty": 1, "is_frequently_asked": True},
-    {"subject": "Vatandaşlık", "topic": "Temel Haklar", "question_text": "Aşağıdakilerden hangisi kişinin dokunulmaz hakları arasında yer almaz?",
-     "option_a": "Yaşama hakkı", "option_b": "Seçme hakkı", "option_c": "Kişi özgürlüğü", "option_d": "Konut dokunulmazlığı",
-     "correct_option": "b", "difficulty": 2, "is_frequently_asked": True},
-    {"subject": "Vatandaşlık", "topic": "Yargı", "question_text": "Anayasa Mahkemesi kaç üyeden oluşur?",
-     "option_a": "11", "option_b": "13", "option_c": "15", "option_d": "17",
-     "correct_option": "c", "difficulty": 2, "is_frequently_asked": True},
-    {"subject": "Vatandaşlık", "topic": "Devlet Yapısı", "question_text": "Cumhurbaşkanının görev süresi kaç yıldır?",
-     "option_a": "4", "option_b": "5", "option_c": "6", "option_d": "7",
-     "correct_option": "b", "difficulty": 1, "is_frequently_asked": True},
-    {"subject": "Vatandaşlık", "topic": "Kavramlar", "question_text": "Hukuk devletinin temel ilkesi aşağıdakilerden hangisidir?",
-     "option_a": "Kuvvetler ayrılığı", "option_b": "Halk egemenliği", "option_c": "Kanunilik", "option_d": "Laiklik",
-     "correct_option": "c", "difficulty": 2, "is_frequently_asked": False},
 
     # MATEMATİK
     {"subject": "Matematik", "topic": "Temel İşlemler", "question_text": "3x + 5 = 20 denkleminde x kaçtır?",
@@ -77,53 +35,47 @@ QUESTIONS = [
     {"subject": "Matematik", "topic": "Yüzde", "question_text": "80'in %25'i kaçtır?",
      "option_a": "15", "option_b": "20", "option_c": "25", "option_d": "30",
      "correct_option": "b", "difficulty": 1, "is_frequently_asked": True},
-    {"subject": "Matematik", "topic": "Oran-Orantı", "question_text": "3/4 oranı hangi yüzdeye eşittir?",
-     "option_a": "60%", "option_b": "70%", "option_c": "75%", "option_d": "80%",
-     "correct_option": "c", "difficulty": 1, "is_frequently_asked": True},
-    {"subject": "Matematik", "topic": "Problemler", "question_text": "Bir sayının 3 katı 24 ise, sayı kaçtır?",
-     "option_a": "6", "option_b": "8", "option_c": "10", "option_d": "12",
-     "correct_option": "b", "difficulty": 1, "is_frequently_asked": True},
-    {"subject": "Matematik", "topic": "Geometri", "question_text": "Kenar uzunluğu 5 cm olan karenin alanı kaç cm²'dir?",
-     "option_a": "10", "option_b": "20", "option_c": "25", "option_d": "50",
-     "correct_option": "c", "difficulty": 1, "is_frequently_asked": True},
-    {"subject": "Matematik", "topic": "Sayılar", "question_text": "En küçük iki basamaklı asal sayı kaçtır?",
-     "option_a": "10", "option_b": "11", "option_c": "13", "option_d": "17",
-     "correct_option": "b", "difficulty": 2, "is_frequently_asked": False},
-    {"subject": "Matematik", "topic": "Problemler", "question_text": "Ali'nin yaşı Ayşe'nin yaşının 2 katıdır. Yaşları toplamı 27 ise Ali kaç yaşındadır?",
-     "option_a": "9", "option_b": "15", "option_c": "18", "option_d": "20",
-     "correct_option": "c", "difficulty": 2, "is_frequently_asked": True},
+
+    # TÜRKÇE (YENİ EKLENDİ)
+    {"subject": "Türkçe", "topic": "Cümlede Anlam", "question_text": "Aşağıdaki cümlelerin hangisinde 'neden-sonuç' ilişkisi vardır?",
+     "option_a": "Yağmur yağınca içeri girdik.", "option_b": "Güneş açsın diye dua ettik.", "option_c": "Çok çalışırsan başarırsın.", "option_d": "Akşam bize gelecekler.",
+     "correct_option": "a", "difficulty": 1, "is_frequently_asked": True},
+    
+    # EĞİTİM BİLİMLERİ (YENİ EKLENDİ)
+    {"subject": "Eğitim Bilimleri", "topic": "Gelişim Psikolojisi", "question_text": "Piaget'ye göre soyut işlemler dönemi hangi yaş aralığını kapsar?",
+     "option_a": "0-2", "option_b": "2-7", "option_c": "7-11", "option_d": "11-18",
+     "correct_option": "d", "difficulty": 2, "is_frequently_asked": True},
+
+    # GÜNCEL BİLGİLER (YENİ EKLENDİ)
+    {"subject": "Güncel Bilgiler", "topic": "2026 Olimpiyatları", "question_text": "2026 Kış Olimpiyatları hangi ülkede düzenlenecektir?",
+     "option_a": "İtalya", "option_b": "Fransa", "option_c": "Japonya", "option_d": "Kanada",
+     "correct_option": "a", "difficulty": 3, "is_frequently_asked": True},
 ]
 
 FLASHCARDS = [
-    {"subject": "Tarih", "front_text": "1299", "back_text": "Osmanlı Devleti'nin kuruluş yılı"},
+    # Eskiler
     {"subject": "Tarih", "front_text": "1453", "back_text": "İstanbul'un fethi"},
-    {"subject": "Tarih", "front_text": "23 Nisan 1920", "back_text": "TBMM'nin açılışı"},
-    {"subject": "Tarih", "front_text": "29 Ekim 1923", "back_text": "Cumhuriyet'in ilanı"},
-    {"subject": "Tarih", "front_text": "1 Kasım 1928", "back_text": "Harf İnkılabı"},
-    {"subject": "Tarih", "front_text": "1934", "back_text": "Kadınlara seçme ve seçilme hakkı"},
     {"subject": "Coğrafya", "front_text": "Ağrı Dağı", "back_text": "Türkiye'nin en yüksek dağı (5137 m)"},
-    {"subject": "Coğrafya", "front_text": "Kızılırmak", "back_text": "Türkiye'nin en uzun nehri (1355 km)"},
-    {"subject": "Coğrafya", "front_text": "Van Gölü", "back_text": "Türkiye'nin en büyük gölü"},
-    {"subject": "Coğrafya", "front_text": "Marmara", "back_text": "En kalabalık bölge"},
-    {"subject": "Coğrafya", "front_text": "Karadeniz iklimi", "back_text": "Her mevsim yağışlı"},
-    {"subject": "Vatandaşlık", "front_text": "1982", "back_text": "Mevcut Anayasa'nın kabul yılı"},
     {"subject": "Vatandaşlık", "front_text": "600", "back_text": "TBMM milletvekili sayısı"},
-    {"subject": "Vatandaşlık", "front_text": "15 üye", "back_text": "Anayasa Mahkemesi üye sayısı"},
-    {"subject": "Vatandaşlık", "front_text": "5 yıl", "back_text": "Cumhurbaşkanı görev süresi"},
     {"subject": "Matematik", "front_text": "Karenin alanı", "back_text": "Kenar × Kenar (a²)"},
-    {"subject": "Matematik", "front_text": "Dairenin alanı", "back_text": "π × r²"},
-    {"subject": "Matematik", "front_text": "Üçgenin alanı", "back_text": "(Taban × Yükseklik) / 2"},
-    {"subject": "Matematik", "front_text": "Yüzde", "back_text": "Sayı × Yüzde / 100"},
+    # Yeniler
+    {"subject": "Türkçe", "front_text": "Ünsüz Benzeşmesi (Sertleşmesi)", "back_text": "Fıstıkçı Şahap harfleriyle biten kelimenin c,d,g ile başlayan ek alınca ç,t,k'ye dönüşmesi."},
+    {"subject": "Eğitim Bilimleri", "front_text": "Klasik Koşullanma", "back_text": "Pavlov - Nötr uyarıcının koşullu uyarıcıya dönüşmesi süreci."},
+    {"subject": "Güncel Bilgiler", "front_text": "NATO'ya katılan son ülke (2024)", "back_text": "İsveç"},
 ]
 
 VIDEOS = [
-    {"title": "Osmanlı Devleti'nin Kuruluşu", "video_url": "https://www.youtube.com/embed/rZo3xkzTfrs", "subject": "Tarih"},
-    {"title": "İstanbul'un Fethi", "video_url": "https://www.youtube.com/embed/wG4vpTjcJIw", "subject": "Tarih"},
-    {"title": "Atatürk İnkılapları", "video_url": "https://www.youtube.com/embed/G8y6qBfmZbA", "subject": "Tarih"},
+    # TARİH (Senin İstediğin Özel Videolar)
+    {"title": "İstanbul'un Fethi ve Fatih Sultan Mehmet", "video_url": "https://www.youtube.com/embed/wG4vpTjcJIw", "subject": "Tarih"},
+    {"title": "Osmanlı Devleti'nin Kuruluşu Kısaca", "video_url": "https://www.youtube.com/embed/rZo3xkzTfrs", "subject": "Tarih"},
+    
+    # DİĞER DERSLER
     {"title": "Türkiye'nin Coğrafi Bölgeleri", "video_url": "https://www.youtube.com/embed/xW8xJXjKMdY", "subject": "Coğrafya"},
-    {"title": "Türkiye İklimi", "video_url": "https://www.youtube.com/embed/hgYqE9UXPXk", "subject": "Coğrafya"},
     {"title": "Anayasa Temel Kavramlar", "video_url": "https://www.youtube.com/embed/GfoUyv0Ie3Y", "subject": "Vatandaşlık"},
-    {"title": "Devletin Temel Nitelikleri", "video_url": "https://www.youtube.com/embed/9bZkp7q19f0", "subject": "Vatandaşlık"},
-    {"title": "Yüzde Problemleri", "video_url": "https://www.youtube.com/embed/8kK2zwjRV0M", "subject": "Matematik"},
-    {"title": "Denklem Çözümü", "video_url": "https://www.youtube.com/embed/PIkK5FAvyEg", "subject": "Matematik"},
+    {"title": "Yüzde Problemleri Pratik Çözüm", "video_url": "https://www.youtube.com/embed/8kK2zwjRV0M", "subject": "Matematik"},
+    
+    # YENİ EKLENEN DERSLERİN VİDEOLARI
+    {"title": "Cümlede Anlam Taktikleri (Reels)", "video_url": "https://www.youtube.com/embed/jfKfPfyJRdk", "subject": "Türkçe"},
+    {"title": "Gelişim Psikolojisi Hap Bilgiler", "video_url": "https://www.youtube.com/embed/jfKfPfyJRdk", "subject": "Eğitim Bilimleri"},
+    {"title": "2026 KPSS Güncel Bilgiler Turu", "video_url": "https://www.youtube.com/embed/jfKfPfyJRdk", "subject": "Güncel Bilgiler"},
 ]
