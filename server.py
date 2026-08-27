@@ -23,6 +23,7 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+# Artık kendi API anahtarımızı (GEMINI_API_KEY) kullanacağız
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 
 app = FastAPI(title="KPSS Quest API")
@@ -148,7 +149,6 @@ async def auth_callback(code: str, state: str):
         token_data = token_res.json()
         access_token = token_data.get("access_token")
         
-        # İŞTE BURAYI DEĞİŞTİRDİK - ARTIK BİZE GERÇEK HATAYI SÖYLEYECEK!
         if not access_token:
             raise HTTPException(status_code=400, detail=token_data)
         
@@ -311,49 +311,42 @@ async def leaderboard(authorization: Optional[str] = Header(default=None)):
         .sort("xp_points", -1).limit(50).to_list(50)
     return {"leaderboard": top, "current_user_id": user["user_id"]}
 
-# ---------------- AI Explain ----------------
+# ---------------- AI Explain (GERÇEK GEMINI BAĞLANTISI) ----------------
 @api_router.post("/ai/explain")
 async def explain(payload: ExplainRequest, authorization: Optional[str] = Header(default=None)):
     await get_user_from_token(authorization)
-    try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"llm_lib_missing: {e}")
-
-    lang_instr = (
-        "Türkçe yanıt ver. Kısa (maks 4 cümle), açıklayıcı ve öğrenci dostu ol."
-        if payload.language == "tr"
-        else "Reply in English. Keep it concise (max 4 sentences), clear, and student-friendly."
+    
+    # 1. Render'dan Yapay Zeka Şifremizi alıyoruz
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        return {"explanation": "Sunucuda Yapay Zeka Şifresi (GEMINI_API_KEY) eksik! Lütfen Render'a şifreyi ekleyin."}
+        
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    
+    # 2. Yapay zekaya (bana) verilecek komut
+    prompt = (
+        f"Sen bir KPSS öğretmenisin. Soru: '{payload.question}'. "
+        f"Doğru cevap: '{payload.correct_answer}'. "
+        f"Kullanıcının cevabı: '{payload.user_answer}'. "
+        f"Öğrenciye doğru cevabın neden doğru olduğunu ve hatasını Türkçe, samimi ve en fazla 3 cümleyle açıkla."
     )
-    sys_msg = f"You are a KPSS exam tutor for Turkish students. {lang_instr}"
-
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=f"explain_{uuid.uuid4().hex}",
-        system_message=sys_msg,
-    ).with_model("gemini", "gemini-3-flash-preview")
-
-    prompt_tr = (
-        f"Soru: {payload.question}\n"
-        f"Doğru cevap: {payload.correct_answer}\n"
-        f"Kullanıcının cevabı: {payload.user_answer}\n"
-        f"Doğru cevabın neden doğru olduğunu ve kullanıcının hatasını kısaca açıkla."
-    )
-    prompt_en = (
-        f"Question: {payload.question}\n"
-        f"Correct answer: {payload.correct_answer}\n"
-        f"User's answer: {payload.user_answer}\n"
-        f"Explain briefly why the correct answer is right and what the user got wrong."
-    )
-    user_msg = UserMessage(text=prompt_tr if payload.language == "tr" else prompt_en)
-
-    try:
-        response = await chat.send_message(user_msg)
-        text = response if isinstance(response, str) else str(response)
-        return {"explanation": text}
-    except Exception as e:
-        logging.exception("ai explain failed")
-        raise HTTPException(status_code=502, detail=f"ai_error: {e}")
+    
+    payload_data = {
+        "contents": [{"parts": [{"text": prompt}]}]
+    }
+    
+    # 3. Google Gemini'a bağlan ve cevabı al
+    async with httpx.AsyncClient() as hc:
+        try:
+            resp = await hc.post(url, json=payload_data, timeout=15.0)
+            if resp.status_code == 200:
+                data = resp.json()
+                text = data["candidates"][0]["content"]["parts"][0]["text"]
+                return {"explanation": text}
+            else:
+                return {"explanation": f"Yapay Zeka bir sorunla karşılaştı: {resp.text}"}
+        except Exception as e:
+            return {"explanation": f"Bağlantı hatası: {str(e)}"}
 
 # ---------------- Health ----------------
 @api_router.get("/")
