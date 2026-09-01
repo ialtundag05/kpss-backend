@@ -315,15 +315,20 @@ async def leaderboard(authorization: Optional[str] = Header(default=None)):
                 
     return {"leaderboard": top, "current_user_id": user["user_id"]}
 
-# ---------------- AI Explain (OTOMATİK MODEL BULUCU) ----------------
+# ---------------- AI Explain (GÜVENLİ VE HATASIZ BAĞLANTI) ----------------
 @api_router.post("/ai/explain")
 async def explain(payload: ExplainRequest, authorization: Optional[str] = Header(default=None)):
     await get_user_from_token(authorization)
     
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        return {"explanation": "Sunucuda Yapay Zeka Şifresi (GEMINI_API_KEY) eksik!"}
+        return {"explanation": "HATA: Sunucuda Yapay Zeka Şifresi (GEMINI_API_KEY) bulunamadı. Lütfen Render.com'u kontrol et."}
         
+    # Yanlışlıkla eklenen boşlukları temizler
+    api_key = api_key.strip()
+    
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    
     prompt = (
         f"Sen bir KPSS öğretmenisin. Soru: '{payload.question}'. "
         f"Doğru cevap: '{payload.correct_answer}'. "
@@ -331,43 +336,27 @@ async def explain(payload: ExplainRequest, authorization: Optional[str] = Header
         f"Öğrenciye doğru cevabın neden doğru olduğunu ve hatasını Türkçe, samimi ve en fazla 3 cümleyle açıkla."
     )
     
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": api_key
+    }
+    
     payload_data = {
         "contents": [{"parts": [{"text": prompt}]}]
     }
     
     async with httpx.AsyncClient() as hc:
-        target_model = "models/gemini-1.5-flash" # Varsayılan (Eğer bulamazsa bunu dener)
-        
-        # 1. Google'a sor: "Şu an elinde hangi modeller var?"
         try:
-            models_resp = await hc.get(f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}", timeout=10.0)
-            if models_resp.status_code == 200:
-                models_list = models_resp.json().get("models", [])
-                # Sadece soru çözebilen modelleri seç
-                valid_models = [m["name"] for m in models_list if "generateContent" in m.get("supportedGenerationMethods", [])]
-                if valid_models:
-                    # İçinde "flash" geçen en yeni modeli bulmaya çalış
-                    flash_models = [m for m in valid_models if "flash" in m.lower()]
-                    if flash_models:
-                        target_model = flash_models[-1] # En güncel flash modeli
-                    else:
-                        target_model = valid_models[-1] # Flash yoksa herhangi birini seç
-        except Exception:
-            pass # Eğer model listesini alamazsa varsayılan ile devam et
-
-        # 2. Bulduğumuz en güncel modele soruyu gönder
-        url = f"https://generativelanguage.googleapis.com/v1beta/{target_model}:generateContent?key={api_key}"
-        try:
-            resp = await hc.post(url, json=payload_data, timeout=15.0)
+            resp = await hc.post(url, headers=headers, json=payload_data, timeout=15.0)
             if resp.status_code == 200:
                 data = resp.json()
                 text = data["candidates"][0]["content"]["parts"][0]["text"]
                 return {"explanation": text}
             else:
-                # EĞER HATA OLURSA, ARTIK EKRANDA TAM OLARAK NEDEN HATA OLDUĞUNU GÖRECEĞİZ!
-                return {"explanation": f"Google API Hatası ({resp.status_code}): \n{resp.text}\n\nDenenen Model: {target_model}"}
+                # EĞER HALA ÇALIŞMAZSA, EKRANDA TAM OLARAK GOOGLE'IN NEDEN REDDETTİĞİNİ GÖRECEĞİZ!
+                return {"explanation": f"Google Hatası ({resp.status_code}): Lütfen şifrenin eksiksiz kopyalandığından emin ol.\nDetay: {resp.text}"}
         except Exception as e:
-            return {"explanation": f"Sunucu bağlantı hatası: {str(e)}"}
+            return {"explanation": f"Bağlantı koptu: {str(e)}"}
 
 # ---------------- Health ----------------
 @api_router.get("/")
