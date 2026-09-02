@@ -315,7 +315,7 @@ async def leaderboard(authorization: Optional[str] = Header(default=None)):
                 
     return {"leaderboard": top, "current_user_id": user["user_id"]}
 
-# ---------------- AI Explain (GÜVENLİ VE HATASIZ BAĞLANTI) ----------------
+# ---------------- AI Explain (GEMINI 3 BAĞLANTISI) ----------------
 @api_router.post("/ai/explain")
 async def explain(payload: ExplainRequest, authorization: Optional[str] = Header(default=None)):
     await get_user_from_token(authorization)
@@ -324,10 +324,7 @@ async def explain(payload: ExplainRequest, authorization: Optional[str] = Header
     if not api_key:
         return {"explanation": "HATA: Sunucuda Yapay Zeka Şifresi (GEMINI_API_KEY) bulunamadı. Lütfen Render.com'u kontrol et."}
         
-    # Yanlışlıkla eklenen boşlukları temizler
     api_key = api_key.strip()
-    
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
     
     prompt = (
         f"Sen bir KPSS öğretmenisin. Soru: '{payload.question}'. "
@@ -345,18 +342,25 @@ async def explain(payload: ExplainRequest, authorization: Optional[str] = Header
         "contents": [{"parts": [{"text": prompt}]}]
     }
     
+    # Senin projendeki güncel Gemini 3 modellerini sırayla dener
+    models_to_try = ["gemini-3-flash", "gemini-3-flash-preview", "gemini-3-pro"]
+    
     async with httpx.AsyncClient() as hc:
-        try:
-            resp = await hc.post(url, headers=headers, json=payload_data, timeout=15.0)
-            if resp.status_code == 200:
-                data = resp.json()
-                text = data["candidates"][0]["content"]["parts"][0]["text"]
-                return {"explanation": text}
-            else:
-                # EĞER HALA ÇALIŞMAZSA, EKRANDA TAM OLARAK GOOGLE'IN NEDEN REDDETTİĞİNİ GÖRECEĞİZ!
-                return {"explanation": f"Google Hatası ({resp.status_code}): Lütfen şifrenin eksiksiz kopyalandığından emin ol.\nDetay: {resp.text}"}
-        except Exception as e:
-            return {"explanation": f"Bağlantı koptu: {str(e)}"}
+        last_error = ""
+        for model in models_to_try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+            try:
+                resp = await hc.post(url, headers=headers, json=payload_data, timeout=15.0)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    text = data["candidates"][0]["content"]["parts"][0]["text"]
+                    return {"explanation": text}
+                else:
+                    last_error = f"Model {model} reddetti: {resp.text}"
+            except Exception as e:
+                last_error = f"Model {model} ulaşılamadı: {str(e)}"
+                
+        return {"explanation": f"Google Hatası: Güncel model bulunamadı.\nSon Hata: {last_error}"}
 
 # ---------------- Health ----------------
 @api_router.get("/")
